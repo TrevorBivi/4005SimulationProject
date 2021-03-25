@@ -1,4 +1,6 @@
 import random
+from random import seed
+
 import numpy as np
 
 MAX_BUFFER_SIZE = 2
@@ -63,26 +65,6 @@ class RandomDataGenerator(object):
         """picks a random time directly from the given data file"""
         index = random.randint(0,len(self.tempFloats)-1)
         return int(self.tempFloats[index] * ITERATIONS_PER_UNIT_TIME)
-
-
-class PseudoRandomDataGenerator(object):
-    '''
-    Generates pseudo random numbers by returning the next value from a data file
-    '''
-    def __init__(self, dataFile):
-        self.name = dataFile
-        data = open(dataFile,'r').read()
-        lines = data.split('\n')
-        floats = [float(l) for l in lines[:-2]]
-        self.tempFloats = floats
-        self.index = 0
-
-    def generate(self):
-        """picks a time directly from the given data file"""
-        indx = self.index % len(self.tempFloats)
-        self.index += 1
-        return int(self.tempFloats[indx] * ITERATIONS_PER_UNIT_TIME)
-
 
 class Workstation(object):
     def __init__(self, name, components, randomGenerator):
@@ -149,12 +131,9 @@ class Workstation(object):
 
 
 class Inspector(object):
-    def __init__(self, name, components, pseudoRandomizeComponents = False):
+    def __init__(self, name, components):
         self.name = name
         self.components = components
-
-        self.pseudoRandomizeComponents = pseudoRandomizeComponents
-        self.pseudoRandomHelper = 0
         
         self.iterationsLeftOnWork = 0
         self.iterationsWaiting = 0
@@ -170,12 +149,8 @@ class Inspector(object):
         """start working on a new component"""
         assert self.iterationsLeftOnWork == 0
         
-        if self.pseudoRandomizeComponents:
-            self.currentComponent = self.components[ self.pseudoRandomHelper % len(self.components) ]
-            self.pseudoRandomHelper += 1
-        else:
-            index = random.randint(0,len(self.components)-1)
-            self.currentComponent = self.components[index]
+        index = random.randint(0,len(self.components)-1)
+        self.currentComponent = self.components[index]
             
         self.generateRandomWorkTime()
 
@@ -219,8 +194,10 @@ class Component(object):
 
 
 if __name__ == "__main__":
+
+    #seed(1)
+    
     #randomGenerator = RandomDataGenerator
-    #randomGenerator = PseudoRandomDataGenerator
     randomGenerator = RandomExponentialGenerator
 
     components = {
@@ -236,8 +213,8 @@ if __name__ == "__main__":
         ]
 
     inspectors = [
-        Inspector('inspector 1', (components['C1'],),  pseudoRandomizeComponents = (randomGenerator == PseudoRandomDataGenerator)),
-        Inspector('inspector 1', (components['C2'],components['C3']),  pseudoRandomizeComponents = (randomGenerator == PseudoRandomDataGenerator) ),
+        Inspector('inspector 1', (components['C1'],)),
+        Inspector('inspector 1', (components['C2'],components['C3']) ),
         ]
 
     iterables = inspectors + workstations
