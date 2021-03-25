@@ -4,9 +4,6 @@ from random import seed
 import numpy as np
 
 MAX_BUFFER_SIZE = 2 # The size of the workstation buffers
-SIMULATION_TIME = 100000.0 # The amount of time to simulate
-ITERATIONS_PER_UNIT_TIME = 15 #The iterations per unit of time
-
 
 class RandomExponentialGenerator(object):
     '''
@@ -23,7 +20,7 @@ class RandomExponentialGenerator(object):
         lmb = 1/mean #lambda
         return lmb
 
-    def __init__(self,initParam):
+    def __init__(self,initParam, iterPerUnitTime):
         """
         initParam -- the value for the variable lambda or a file to calculate lambda using
         """
@@ -34,6 +31,7 @@ class RandomExponentialGenerator(object):
             self.lmbda = initParam
         else:
             raise ValueError("Must pass a lambda or a data file path")
+        self.iterPerUnitTime = iterPerUnitTime #iterations per one unit of itme
         
     def inverse_cdf(self,uniform_random):
         """
@@ -45,25 +43,26 @@ class RandomExponentialGenerator(object):
     def generate(self):
         "generates a random time using the inverse CDF"
         uniform_random = random.uniform(0.0,1.0) #A value from 0-1
-        return int(self.inverse_cdf(uniform_random) * ITERATIONS_PER_UNIT_TIME)
+        return int(self.inverse_cdf(uniform_random) * self.iterPerUnitTime)
 
 
 class RandomDataGenerator(object):
     '''
     Generates random numbers by returning a random value from a data file
     '''
-    def __init__(self, dataFile):
+    def __init__(self, dataFile, iterPerUnitTime):
         """
         dataFile -- the file to get data values from
         """
         data = open(file,'r').read() # the file data
         lines = data.split('\n') #the lines of file data
         self.floats = [float(l) for l in lines[:-2]] #a list of all values in the data file
+        self.iterPerUnitTime = iterPerUnitTime #iterations per one unit of itme
 
     def generate(self):
         """picks a random time directly from the given data file"""
         index = random.randint(0,len(self.tempFloats)-1) #The randomly chosen data index to return
-        return int(self.floats[index] * ITERATIONS_PER_UNIT_TIME)
+        return int(self.floats[index] * self.iterPerUnitTime)
 
 class Workstation(object):
     def __init__(self, name, components, randomGenerator):
@@ -220,28 +219,11 @@ class Component(object):
         return self.randomGenerator.generate()
 
 
-if __name__ == "__main__":
-
-    #Use a seed to get reproducable results
-    #seed(1)
-
-    #The random generator type to use
-    #randomGenerator = RandomDataGenerator
-    randomGenerator = RandomExponentialGenerator
-
-    #the randomGenerators instances that will be used (stored for printing after running for verification purposes)
-    randomGenerators = {
-            'servinsp1': randomGenerator('dataFiles/servinsp1.dat'),
-            'servinsp22': randomGenerator('dataFiles/servinsp22.dat'),
-            'servinsp23': randomGenerator('dataFiles/servinsp23.dat'),
-            'ws1': randomGenerator('dataFiles/ws1.dat'),
-            'ws2': randomGenerator('dataFiles/ws2.dat'),
-            'ws3': randomGenerator('dataFiles/ws3.dat')
-        }
-
-    print("Input parameters before...")
-    for key in randomGenerators.keys():
-        print(key+':',randomGenerators[key].lmbda)
+def simulate(randomGenerators, simTime=10000, iterPerTime=25 , initPhaseTime=0, printInfo=False):
+    if printInfo:
+        print("Input parameters before...")
+        for key in randomGenerators.keys():
+            print(key+':',randomGenerators[key].lmbda)
 
     #The component instances
     components = {
@@ -266,22 +248,75 @@ if __name__ == "__main__":
     
     iterables = inspectors + workstations #All objects that need to have performIteration called once an iteration
 
-    tenPercentTest = int(SIMULATION_TIME * ITERATIONS_PER_UNIT_TIME / 10) #If remainder iteration count divided by this is 0 then print percent complete info
-    print("\nrunning...")
-    for loop in range(int(SIMULATION_TIME * ITERATIONS_PER_UNIT_TIME)):
-        if not loop == 0 and loop % tenPercentTest == 0:
+    #perform initializaiton
+    for loop in range(int(initPhaseTime * iterPerTime)):
+        for iterable in iterables:
+            iterable.performIteration()
+    for workstation in workstations:
+        workstation.completed = 0
+        workstation.iterationsWaiting = 0
+    for inspector in inspectors:
+        inspector.iterationsWaiting = 0
+
+    #Run program
+    if printInfo:
+        print("\nrunning...")
+        tenPercentTest = int(simTime * iterPerTime / 10) #If remainder iteration count divided by this is 0 then print percent complete info
+    for loop in range(int(simTime * iterPerTime)):
+        if printInfo and (not loop == 0) and (loop % tenPercentTest == 0):
             print(str(loop / tenPercentTest * 10)+"%...")
         for iterable in iterables:
             iterable.performIteration()
 
-    print("Simulated", SIMULATION_TIME, "time  with ", ITERATIONS_PER_UNIT_TIME, "iterations per unit time...")
+    #print results      
+    if printInfo:
+        print("Simulated", simTime, "time  with ", iterPerTime, "iterations per unit time...")
 
-    for num, workstation in enumerate(workstations):
-        print("P" + str(num+1) + " created:", workstation.completed, '(' + str(workstation.completed / SIMULATION_TIME) + " / time unit)")
+        for num, workstation in enumerate(workstations):
+            print("P" + str(num+1) + " created:", workstation.completed, '(' + str(workstation.completed / simTime) + " / time unit)")
+            
+        for iterable in iterables:
+            print(iterable.name, "time waiting:", iterable.iterationsWaiting, '(' + str(iterable.iterationsWaiting / iterPerTime) + ' time units)')
+
+        print("\nInput parameters after...")
+        for key in randomGenerators.keys():
+            print(key+':',randomGenerators[key].lmbda)
+
+    return {
+            'waitTimes':{
+                'inspector1':inspectors[0].iterationsWaiting / iterPerTime,
+                'inspector2':inspectors[1].iterationsWaiting / iterPerTime,
+                'workstation1':workstations[0].iterationsWaiting / iterPerTime,
+                'workstation2':workstations[1].iterationsWaiting / iterPerTime,
+                'workstation3':workstations[2].iterationsWaiting / iterPerTime,
+                },
+            'completed':{
+                'product1':workstations[0].completed,
+                'product2':workstations[1].completed,
+                'product3':workstations[2].completed,
+                }
+        }
         
-    for iterable in iterables:
-        print(iterable.name, "time waiting:", iterable.iterationsWaiting, '(' + str(iterable.iterationsWaiting / ITERATIONS_PER_UNIT_TIME) + ' time units)')
+    
 
-    print("\nInput parameters after...")
-    for key in randomGenerators.keys():
-        print(key+':',randomGenerators[key].lmbda)
+if __name__ == "__main__":
+
+    #Use a seed to get reproducable results
+    #seed(1)
+
+    SIMULATION_TIME = 30000.0 # The amount of time to simulate
+    ITERATIONS_PER_UNIT_TIME = 25 #The iterations per unit of time
+
+    #the randomGenerators instances that will be used (stored for printing after running for verification purposes)
+    randomGenerators = {
+            'servinsp1': RandomExponentialGenerator('dataFiles/servinsp1.dat',ITERATIONS_PER_UNIT_TIME),
+            'servinsp22': RandomExponentialGenerator('dataFiles/servinsp22.dat',ITERATIONS_PER_UNIT_TIME),
+            'servinsp23': RandomExponentialGenerator('dataFiles/servinsp23.dat',ITERATIONS_PER_UNIT_TIME),
+            'ws1': RandomExponentialGenerator('dataFiles/ws1.dat',ITERATIONS_PER_UNIT_TIME),
+            'ws2': RandomExponentialGenerator('dataFiles/ws2.dat',ITERATIONS_PER_UNIT_TIME),
+            'ws3': RandomExponentialGenerator('dataFiles/ws3.dat',ITERATIONS_PER_UNIT_TIME)
+        }
+
+    simulate(randomGenerators, simTime=SIMULATION_TIME, iterPerTime=ITERATIONS_PER_UNIT_TIME, printInfo=True)
+
+    

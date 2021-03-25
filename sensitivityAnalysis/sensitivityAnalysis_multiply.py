@@ -17,6 +17,8 @@ if not os.path.exists('output'):
 
 seed(1)
 
+SIMULATION_TIME = 100000
+ITERATIONS_PER_UNIT_TIME = 10
 
 defaultLambdas = {
     'servinsp1':RandomExponentialGenerator.lambdaFromFile('../dataFiles/servinsp1.dat'),
@@ -51,45 +53,21 @@ for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all
         }
         for key in defaultLambdas.keys():
             if multiplyKey == 'all' or key == multiplyKey:
-                randomGenerators[key] = RandomExponentialGenerator(defaultLambdas[key] * i)
+                randomGenerators[key] = RandomExponentialGenerator(defaultLambdas[key] * i, ITERATIONS_PER_UNIT_TIME)
             else:
-                randomGenerators[key] = RandomExponentialGenerator(defaultLambdas[key])
-        
-        #The component instances
-        components = {
-            'C1': Component('C1', randomGenerators['servinsp1']),
-            'C2': Component('C2', randomGenerators['servinsp22']),
-            'C3': Component('C3', randomGenerators['servinsp23']),
-            }
+                randomGenerators[key] = RandomExponentialGenerator(defaultLambdas[key], ITERATIONS_PER_UNIT_TIME)
 
-        #The workstation instances
-        workstations = [
-            Workstation('workstation 1', ('C1',), randomGenerators['ws1']),
-            Workstation('workstation 2', ('C1','C2'), randomGenerators['ws2']),
-            Workstation('workstation 3', ('C1','C3'), randomGenerators['ws3']),
-            ]
-
-        #The inspector instances
-        inspectors = [
-            Inspector('inspector 1', (components['C1'],), workstations),
-            Inspector('inspector 1', (components['C2'],components['C3']), workstations),
-            ]
-
-        
-        iterables = inspectors + workstations #All objects that need to have performIteration called once an iteration
-        for loop in range(int(SIMULATION_TIME * ITERATIONS_PER_UNIT_TIME)):
-            for iterable in iterables:
-                iterable.performIteration()
+        results = simulate(randomGenerators, simTime=SIMULATION_TIME, iterPerTime=ITERATIONS_PER_UNIT_TIME , initPhaseTime=0, printInfo=False)
                 
-        p1Complete.append( workstations[0].completed )
-        p2Complete.append( workstations[1].completed )
-        p3Complete.append( workstations[2].completed )
+        p1Complete.append( results['completed']['product1'] )
+        p2Complete.append( results['completed']['product2'] )
+        p3Complete.append( results['completed']['product3'] )
 
-        w1Wait.append(workstations[0].iterationsWaiting )
-        w2Wait.append(workstations[1].iterationsWaiting )
-        w3Wait.append(workstations[2].iterationsWaiting )
-        i1Wait.append(inspectors[0].iterationsWaiting )
-        i2Wait.append(inspectors[1].iterationsWaiting )
+        w1Wait.append( results['waitTimes']['workstation1'] )
+        w2Wait.append( results['waitTimes']['workstation2'] )
+        w3Wait.append( results['waitTimes']['workstation3'] )
+        i1Wait.append( results['waitTimes']['inspector1'] )
+        i2Wait.append( results['waitTimes']['inspector2'] )
 
     for i in range(len(iVals)-1):
         p1l, = plt.plot( iVals[i], p1Complete[i], 'r,')
