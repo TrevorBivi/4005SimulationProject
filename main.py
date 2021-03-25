@@ -4,7 +4,7 @@ from random import seed
 import numpy as np
 
 MAX_BUFFER_SIZE = 2 # The size of the workstation buffers
-SIMULATION_TIME = 10000.0 # The amount of time to simulate
+SIMULATION_TIME = 30000.0 # The amount of time to simulate
 ITERATIONS_PER_UNIT_TIME = 25 #The iterations per unit of time
 
 
@@ -31,7 +31,7 @@ class RandomExponentialGenerator(object):
         if type(initParam) is str:
             self.lmbda = RandomExponentialGenerator.lambdaFromFile(initParam)
         elif type(initParam) is float:
-            self.lmbda = initPram
+            self.lmbda = initParam
         else:
             raise ValueError("Must pass a lambda or a data file path")
         
@@ -137,10 +137,11 @@ class Workstation(object):
 
 
 class Inspector(object):
-    def __init__(self, name, components):
+    def __init__(self, name, components, workstations):
         """
         name -- name of inspector for debugging
         components -- iterable of Component objects
+        workstations -- all the workstations
 
         The inspector takes a component on initialization!
         """
@@ -149,6 +150,8 @@ class Inspector(object):
         
         self.iterationsLeftOnWork = 0 #iterations left before done and should try putting component in a buffer
         self.iterationsWaiting = 0 #iterations left waiting for a buffer spot to open
+
+        self.workstations = workstations #all the workstations
         
         self.getNextComponent()
         
@@ -171,7 +174,7 @@ class Inspector(object):
         chosen = None #Stores the chosen buffer
         chosenSize = MAX_BUFFER_SIZE #Stores amount of items stored in the chosen buffer (want to get this as low as possible)
         
-        for workstation in workstations:
+        for workstation in self.workstations:
             if self.currentComponent.name in list(workstation.buffers.keys()): #workstation has a corresponding buffer
                 workstationBufferSize = workstation.getBuffer(self.currentComponent.name) # amount of items stored in current chosen buffer
                 
@@ -217,7 +220,6 @@ class Component(object):
         return self.randomGenerator.generate()
 
 
-
 if __name__ == "__main__":
 
     #Use a seed to get reproducable results
@@ -257,8 +259,8 @@ if __name__ == "__main__":
 
     #The inspector instances
     inspectors = [
-        Inspector('inspector 1', (components['C1'],)),
-        Inspector('inspector 1', (components['C2'],components['C3']) ),
+        Inspector('inspector 1', (components['C1'],), workstations),
+        Inspector('inspector 1', (components['C2'],components['C3']), workstations ),
         ]
 
     
