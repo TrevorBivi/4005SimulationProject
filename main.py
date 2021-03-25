@@ -68,6 +68,11 @@ class RandomDataGenerator(object):
 
 class Workstation(object):
     def __init__(self, name, components, randomGenerator):
+        """
+        name -- name of workstation for debugging
+        components -- list of components that the workstation must have a buffer to hold
+        randomGenerator -- An object for generating random numbers (must have a method "generate")
+        """
         self.name = name
 
         self.completed = 0
@@ -77,10 +82,8 @@ class Workstation(object):
         self.randomGenerator = randomGenerator
 
         self.buffers = {}
-        self.takenFromBuffers = {}
         for component in components:
             self.buffers[component] = 0
-            self.takenFromBuffers[component] = False
             
     def generateRandomWorkTime(self):
         """set a new random work time"""
@@ -96,35 +99,32 @@ class Workstation(object):
         """Return how full a buffer is"""
         return self.buffers[componentName]
 
-    def takenFromAllBuffers(self):
-        """Check if the workstation is ready to start creating a product"""
-        return not (False in list(self.takenFromBuffers.values()))
+    def canTakeFromBuffers(self):
+        """returns whether all buffers have an item or not"""
+        assert self.iterationsLeftOnWork == 0
+        return not 0 in self.buffers.values()
 
-    def resetTakenFromAllBuffers(self):
-        """set the takenFromBuffer dict values to false meaning the workstation needs to take new components"""
-        for componentName in list(self.takenFromBuffers.keys()):
-            self.takenFromBuffers[componentName] = False
-
-    def attemptTakeFromBuffers(self):
-        """for all keys (component names) in takenFromBuffers with False values, try to take from coresponding buffer and set to True"""
-        assert not self.takenFromAllBuffers()
-        for componentName in list(self.takenFromBuffers.keys()):
-            if self.takenFromBuffers[componentName] == False and self.buffers[componentName] > 0:
-                self.buffers[componentName] -= 1
-                self.takenFromBuffers[componentName] = True
+    def takeFromBuffers(self):
+        """decrements all buffers"""
+        assert self.iterationsLeftOnWork == 0
+        for k in self.buffers.keys():
+            assert self.buffers[k] > 0
+            self.buffers[k] -= 1
     
     def performIteration(self):
+        """
+        If done working on a component, 
+        """
+        assert self.iterationsLeftOnWork > -1
+        
         if self.iterationsLeftOnWork > 0:
             self.iterationsLeftOnWork -= 1
+            if self.iterationsLeftOnWork == 0:
+                self.completed += 1
             
         if self.iterationsLeftOnWork == 0:
-            if self.takenFromAllBuffers() == True:
-                self.resetTakenFromAllBuffers()
-                self.completed += 1
-                
-            self.attemptTakeFromBuffers()
-            
-            if self.takenFromAllBuffers() == True:
+            if self.canTakeFromBuffers() == True:
+                self.takeFromBuffers()
                 self.generateRandomWorkTime()
             else:
                 self.iterationsWaiting += 1
@@ -132,6 +132,12 @@ class Workstation(object):
 
 class Inspector(object):
     def __init__(self, name, components):
+        """
+        name -- name of inspector for debugging
+        components -- iterable of Component objects
+
+        The inspector takes a component on initialization!
+        """
         self.name = name
         self.components = components
         
@@ -173,6 +179,12 @@ class Inspector(object):
         return chosen != None
 
     def performIteration(self):
+        """
+        If done working on a component, try placing it in a buffer
+        If successfully places a component in a buffer, start working on a new component
+        """
+        assert self.iterationsLeftOnWork > -1
+        
         if self.iterationsLeftOnWork > 0:
             self.iterationsLeftOnWork -= 1
         if self.iterationsLeftOnWork == 0:
@@ -183,12 +195,19 @@ class Inspector(object):
 
 
 class Component(object):
+    '''
+    Represents some component that needs to go through the simulated system.
+    '''
     def __init__(self, name, randomGenerator):
+        '''
+        name -- name of the component for debugging
+        randomGenerator -- An object for making random numbers (must have a method "generate")
+        '''
         self.name = name
         self.randomObject = randomGenerator
 
     def generateRandomWorkTime(self):
-        """return a new random time"""
+        """return a new random time (To be called by workers since the work time depends on component type, not worker)"""
         return self.randomObject.generate()
 
 
@@ -200,16 +219,29 @@ if __name__ == "__main__":
     #randomGenerator = RandomDataGenerator
     randomGenerator = RandomExponentialGenerator
 
+    randomGenerators = {
+            'servinsp1': randomGenerator('dataFiles/servinsp1.dat'),
+            'servinsp22': randomGenerator('dataFiles/servinsp22.dat'),
+            'servinsp23': randomGenerator('dataFiles/servinsp23.dat'),
+            'ws1': randomGenerator('dataFiles/ws1.dat'),
+            'ws2': randomGenerator('dataFiles/ws2.dat'),
+            'ws3': randomGenerator('dataFiles/ws3.dat')
+        }
+
+    print("Input parameters before...")
+    for key in randomGenerators.keys():
+        print(key+':',randomGenerators[key].lmbda)
+
     components = {
-        'C1': Component('C1', randomGenerator('dataFiles/servinsp1.dat')),
-        'C2': Component('C2', randomGenerator('dataFiles/servinsp22.dat')),
-        'C3': Component('C3', randomGenerator('dataFiles/servinsp23.dat')),
+        'C1': Component('C1', randomGenerators['servinsp1']),
+        'C2': Component('C2', randomGenerators['servinsp22']),
+        'C3': Component('C3', randomGenerators['servinsp23']),
         }
 
     workstations = [
-        Workstation('workstation 1', ('C1',), randomGenerator('dataFiles/ws1.dat')),
-        Workstation('workstation 2', ('C1','C2'), randomGenerator('dataFiles/ws2.dat')),
-        Workstation('workstation 3', ('C1','C3'), randomGenerator('dataFiles/ws3.dat')),
+        Workstation('workstation 1', ('C1',), randomGenerators['ws1']),
+        Workstation('workstation 2', ('C1','C2'), randomGenerators['ws2']),
+        Workstation('workstation 3', ('C1','C3'), randomGenerators['ws3']),
         ]
 
     inspectors = [
@@ -217,10 +249,12 @@ if __name__ == "__main__":
         Inspector('inspector 1', (components['C2'],components['C3']) ),
         ]
 
+
+
     iterables = inspectors + workstations
 
     tenPercentTest = int(SIMULATION_TIME * ITERATIONS_PER_UNIT_TIME / 10)
-    print("running...")
+    print("\nrunning...")
     for loop in range(int(SIMULATION_TIME * ITERATIONS_PER_UNIT_TIME)):
         if not loop == 0 and loop % tenPercentTest == 0:
             print(str(loop / tenPercentTest * 10)+"%...")
@@ -234,3 +268,7 @@ if __name__ == "__main__":
         
     for iterable in iterables:
         print(iterable.name, "time waiting:", iterable.iterationsWaiting, '(' + str(iterable.iterationsWaiting / ITERATIONS_PER_UNIT_TIME) + ' time units)')
+
+    print("\nInput parameters after...")
+    for key in randomGenerators.keys():
+        print(key+':',randomGenerators[key].lmbda)
