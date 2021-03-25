@@ -8,23 +8,13 @@ SIMULATION_TIME = 10000.0
 ITERATIONS_PER_UNIT_TIME = 25
 
 
-def lambdaFromFile(self, file):
-    data = open("../dataFiles/" + dataFile,'r').read()
-    lines = data.split('\n')
-    floats = [float(l) for l in lines[:-2]]
-    
-    n = len(floats)
-    mean = sum(floats) / n
-    lmb = 1/mean
-    
-    return lmb
-
 
 class RandomExponentialGenerator(object):
     '''
     Generates random numbers using ITT of an exponential distribution
     '''
     def lambdaFromFile(file):
+        """Calculates the lambda value for an exponential representation of a data file"""
         data = open(file,'r').read()
         lines = data.split('\n')
         floats = [float(l) for l in lines[:-2]]
@@ -35,6 +25,10 @@ class RandomExponentialGenerator(object):
         return lmb
 
     def __init__(self,initParam):
+        """
+        initParam -- the value for the variable lambda or a file to calculate lambda using
+        """
+        #self.lmbda is the value of variable lambda for the exponential function
         if type(initParam) is str:
             self.lmbda = RandomExponentialGenerator.lambdaFromFile(initParam)
         elif type(initParam) is float:
@@ -43,6 +37,10 @@ class RandomExponentialGenerator(object):
             raise ValueError("Must pass a lambda or a data file path")
         
     def inverse_cdf(self,uniform_random):
+        """
+        Calculates the inverse cdf for the exponenetial function
+        uniform_random -- value between 0-1 inclusive
+        """
         return np.log(1-uniform_random)/-self.lmbda
     
     def generate(self):
@@ -56,15 +54,18 @@ class RandomDataGenerator(object):
     Generates random numbers by returning a random value from a data file
     '''
     def __init__(self, dataFile):
+        """
+        dataFile -- the file to get data values from
+        """
         data = open(dataFile,'r').read()
         lines = data.split('\n')
         floats = [float(l) for l in lines[:-2]]
-        self.tempFloats = floats
+        self.floats = floats #a list of all values in the data file
 
     def generate(self):
         """picks a random time directly from the given data file"""
         index = random.randint(0,len(self.tempFloats)-1)
-        return int(self.tempFloats[index] * ITERATIONS_PER_UNIT_TIME)
+        return int(self.floats[index] * ITERATIONS_PER_UNIT_TIME)
 
 class Workstation(object):
     def __init__(self, name, components, randomGenerator):
@@ -73,15 +74,16 @@ class Workstation(object):
         components -- list of components that the workstation must have a buffer to hold
         randomGenerator -- An object for generating random numbers (must have a method "generate")
         """
-        self.name = name
-
-        self.completed = 0
-        self.iterationsLeftOnWork = 0
-        self.iterationsWaiting = 0
+        self.name = name #name for debugging
         
-        self.randomGenerator = randomGenerator
+        self.completed = 0 #amount of products fully completed
+        self.iterationsLeftOnWork = 0 #the amount of iterations before another product is completed
+        self.iterationsWaiting = 0 #The amount of iterations spent waiting to have all the components needed to start working
+        
+        self.randomGenerator = randomGenerator #The object for generating random times
 
-        self.buffers = {}
+        self.buffers = {} #Stores how full each buffer
+
         for component in components:
             self.buffers[component] = 0
             
@@ -90,13 +92,19 @@ class Workstation(object):
         assert self.iterationsLeftOnWork == 0
         self.iterationsLeftOnWork = self.randomGenerator.generate()
 
-    def addToBuffer(self, component):
-        """increase the value representing the items in a component buffer"""
-        assert (self.buffers[component] < MAX_BUFFER_SIZE)
-        self.buffers[component] += 1
+    def addToBuffer(self, componentName):
+        """
+        increase the value representing the items in a component buffer
+        componentName -- the component name to know which buffer to increase
+        """
+        assert (self.buffers[componentName] < MAX_BUFFER_SIZE)
+        self.buffers[componentName] += 1
         
     def getBuffer(self, componentName):
-        """Return how full a buffer is"""
+        """
+        Return how full a buffer is
+        componentName -- the name of the component
+        """
         return self.buffers[componentName]
 
     def canTakeFromBuffers(self):
@@ -113,7 +121,7 @@ class Workstation(object):
     
     def performIteration(self):
         """
-        If done working on a component, 
+        If done working on a component and can take from all buffers, take from all buffers and start working again
         """
         assert self.iterationsLeftOnWork > -1
         
@@ -138,11 +146,11 @@ class Inspector(object):
 
         The inspector takes a component on initialization!
         """
-        self.name = name
-        self.components = components
+        self.name = name # name for debugging
+        self.components = components #list of component objects that can be picked to work on from infite queue
         
-        self.iterationsLeftOnWork = 0
-        self.iterationsWaiting = 0
+        self.iterationsLeftOnWork = 0 #iterations left before done and should try putting component in a buffer
+        self.iterationsWaiting = 0 #iterations left waiting for a buffer spot to open
         
         self.getNextComponent()
         
@@ -200,25 +208,28 @@ class Component(object):
     '''
     def __init__(self, name, randomGenerator):
         '''
-        name -- name of the component for debugging
+        name -- name of the component for debugging and workstation buffer keys
         randomGenerator -- An object for making random numbers (must have a method "generate")
         '''
-        self.name = name
-        self.randomObject = randomGenerator
+        self.name = name # name of component
+        self.randomGenerator = randomGenerator #object to generate random numbers for workers with
 
     def generateRandomWorkTime(self):
         """return a new random time (To be called by workers since the work time depends on component type, not worker)"""
-        return self.randomObject.generate()
+        return self.randomGenerator.generate()
 
 
 
 if __name__ == "__main__":
 
+    #Use a seed to get reproducable results
     #seed(1)
-    
+
+    #The random generator type to use
     #randomGenerator = RandomDataGenerator
     randomGenerator = RandomExponentialGenerator
 
+    #the randomGenerators instances that will be used (stored for printing after running for verification purposes)
     randomGenerators = {
             'servinsp1': randomGenerator('dataFiles/servinsp1.dat'),
             'servinsp22': randomGenerator('dataFiles/servinsp22.dat'),
@@ -232,28 +243,30 @@ if __name__ == "__main__":
     for key in randomGenerators.keys():
         print(key+':',randomGenerators[key].lmbda)
 
+    #The component instances
     components = {
         'C1': Component('C1', randomGenerators['servinsp1']),
         'C2': Component('C2', randomGenerators['servinsp22']),
         'C3': Component('C3', randomGenerators['servinsp23']),
         }
 
+    #The workstation instances
     workstations = [
         Workstation('workstation 1', ('C1',), randomGenerators['ws1']),
         Workstation('workstation 2', ('C1','C2'), randomGenerators['ws2']),
         Workstation('workstation 3', ('C1','C3'), randomGenerators['ws3']),
         ]
 
+    #The inspector instances
     inspectors = [
         Inspector('inspector 1', (components['C1'],)),
         Inspector('inspector 1', (components['C2'],components['C3']) ),
         ]
 
+    
+    iterables = inspectors + workstations #All objects that need to have performIteration called once an iteration
 
-
-    iterables = inspectors + workstations
-
-    tenPercentTest = int(SIMULATION_TIME * ITERATIONS_PER_UNIT_TIME / 10)
+    tenPercentTest = int(SIMULATION_TIME * ITERATIONS_PER_UNIT_TIME / 10) #If remainder iteration count divided by this is 0 then print percent complete info
     print("\nrunning...")
     for loop in range(int(SIMULATION_TIME * ITERATIONS_PER_UNIT_TIME)):
         if not loop == 0 and loop % tenPercentTest == 0:
