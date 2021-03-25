@@ -3,10 +3,9 @@ from random import seed
 
 import numpy as np
 
-MAX_BUFFER_SIZE = 2
-SIMULATION_TIME = 10000.0
-ITERATIONS_PER_UNIT_TIME = 25
-
+MAX_BUFFER_SIZE = 2 # The size of the workstation buffers
+SIMULATION_TIME = 10000.0 # The amount of time to simulate
+ITERATIONS_PER_UNIT_TIME = 25 #The iterations per unit of time
 
 
 class RandomExponentialGenerator(object):
@@ -15,13 +14,13 @@ class RandomExponentialGenerator(object):
     '''
     def lambdaFromFile(file):
         """Calculates the lambda value for an exponential representation of a data file"""
-        data = open(file,'r').read()
-        lines = data.split('\n')
-        floats = [float(l) for l in lines[:-2]]
+        data = open(file,'r').read() # the file data
+        lines = data.split('\n') #the lines of file data
+        floats = [float(l) for l in lines[:-2]] #The floats stored in the data
         
-        n = len(floats)
-        mean = sum(floats) / n
-        lmb = 1/mean
+        n = len(floats) #number of floats
+        mean = sum(floats) / n #mean
+        lmb = 1/mean #lambda
         return lmb
 
     def __init__(self,initParam):
@@ -45,7 +44,7 @@ class RandomExponentialGenerator(object):
     
     def generate(self):
         "generates a random time using the inverse CDF"
-        uniform_random = random.uniform(0.0,1.0)
+        uniform_random = random.uniform(0.0,1.0) #A value from 0-1
         return int(self.inverse_cdf(uniform_random) * ITERATIONS_PER_UNIT_TIME)
 
 
@@ -57,14 +56,13 @@ class RandomDataGenerator(object):
         """
         dataFile -- the file to get data values from
         """
-        data = open(dataFile,'r').read()
-        lines = data.split('\n')
-        floats = [float(l) for l in lines[:-2]]
-        self.floats = floats #a list of all values in the data file
+        data = open(file,'r').read() # the file data
+        lines = data.split('\n') #the lines of file data
+        self.floats = [float(l) for l in lines[:-2]] #a list of all values in the data file
 
     def generate(self):
         """picks a random time directly from the given data file"""
-        index = random.randint(0,len(self.tempFloats)-1)
+        index = random.randint(0,len(self.tempFloats)-1) #The randomly chosen data index to return
         return int(self.floats[index] * ITERATIONS_PER_UNIT_TIME)
 
 class Workstation(object):
@@ -163,21 +161,21 @@ class Inspector(object):
         """start working on a new component"""
         assert self.iterationsLeftOnWork == 0
         
-        index = random.randint(0,len(self.components)-1)
+        index = random.randint(0,len(self.components)-1) # The index of the randomly chosen component to work on next
         self.currentComponent = self.components[index]
             
         self.generateRandomWorkTime()
 
     def placeComponentInBuffer(self):
         """return whether currentComponent was placed in some workstation's buffer. Prioratizes least full buffer then lowest index buffer in global workstations list"""
-        chosen = None
-        chosenSize = MAX_BUFFER_SIZE
+        chosen = None #Stores the chosen buffer
+        chosenSize = MAX_BUFFER_SIZE #Stores amount of items stored in the chosen buffer (want to get this as low as possible)
         
         for workstation in workstations:
             if self.currentComponent.name in list(workstation.buffers.keys()): #workstation has a corresponding buffer
-                workstationBufferSize = workstation.getBuffer(self.currentComponent.name)
+                workstationBufferSize = workstation.getBuffer(self.currentComponent.name) # amount of items stored in current chosen buffer
                 
-                if workstationBufferSize < chosenSize: #new least full buffer
+                if workstationBufferSize < chosenSize: #check if current is new least full buffer
                     chosen = workstation
                     chosenSize = workstationBufferSize
                     
