@@ -220,6 +220,14 @@ class Component(object):
 
 
 def simulate(randomGenerators, simTime=10000, iterPerTime=25 , initPhaseTime=0, printInfo=False):
+    """
+    return wait times and products complete
+    randomGenerators -- dictionary of random generators to represent each data file
+    simTime -- the time to simulate
+    iterPerTime -- the iterations per unit time
+    initPhaseTime -- the unit time to run before starting simulation monitoring
+    printInfo -- print info about simulation
+    """
     if printInfo:
         print("Input parameters before...")
         for key in randomGenerators.keys():
