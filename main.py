@@ -4,8 +4,8 @@ from random import seed
 import numpy as np
 
 MAX_BUFFER_SIZE = 2 # The size of the workstation buffers
-SIMULATION_TIME = 30000.0 # The amount of time to simulate
-ITERATIONS_PER_UNIT_TIME = 25 #The iterations per unit of time
+SIMULATION_TIME = 100000.0 # The amount of time to simulate
+ITERATIONS_PER_UNIT_TIME = 15 #The iterations per unit of time
 
 
 class RandomExponentialGenerator(object):
