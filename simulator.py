@@ -3,11 +3,11 @@ from random import seed
 import numpy as np
 
 DEBUGPRINT = False
+MAX_BUFFER_SIZE = 2
 
 def printHandler(*args):
     if DEBUGPRINT:
         print(*args)
-
 
 class RandomExponentialGenerator(object):
     '''
@@ -65,9 +65,6 @@ class RandomDataGenerator(object):
         """picks a random time directly from the given data file"""
         index = random.randint(0,len(self.tempFloats)-1) #The randomly chosen data index to return
         return self.floats[index]
-
-
-MAX_BUFFER_SIZE = 2
 
 class Component(object):
     '''
@@ -269,42 +266,32 @@ def simulate(randomGenerators, simTime, initPhaseTime=0, printInfo=False):
 
     iterables = inspectors + workstations
 
+    def passTime(amountTime):
+        timePassed = 0
+        while timePassed < amountTime:
+            #Calculate time to next interesting thing
+            timeToPass = float('inf')
+            for iterable in iterables:
+                if not iterable.blocked and iterable.workTime < timeToPass:
+                    timeToPass = iterable.workTime
+                if timePassed + timeToPass >= amountTime:
+                    timeToPass = amountTime - timePassed
+                printHandler("\nT",timeToPass)
 
-    timePassed = 0
-    while timePassed < initPhaseTime:
-        timeToPass = float('inf')
-        for iterable in iterables:
-            if not iterable.blocked and iterable.workTime < timeToPass:
-                timeToPass = iterable.workTime
-                
-        printHandler("\nT",timeToPass)
-        
-        for iterable in iterables:
-            iterable.advanceTime(timeToPass)
-
-        timePassed += timeToPass
+            #Advance time until next interesting thing
+            for iterable in iterables:
+                iterable.advanceTime(timeToPass)
+            timePassed += timeToPass
 
     if initPhaseTime:
+        passTime(initPhaseTime)
+        for iterable in iterables:
+            iterable.timeWaiting = 0
+        for workstation in workstations:
+            workstation.completed = 0
         printHandler("## BEGIN ACTUAL SIMULATION")
-    
-    for iterable in iterables:
-        iterable.timeWaiting = 0
-    for workstation in workstations:
-        workstation.completed = 0
 
-    timePassed = 0
-    while timePassed < simTime:
-        timeToPass = float('inf')
-        for iterable in iterables:
-            if not iterable.blocked and iterable.workTime < timeToPass:
-                timeToPass = iterable.workTime
-                
-        printHandler("\nT",timeToPass)
-        
-        for iterable in iterables:
-            iterable.advanceTime(timeToPass)
-
-        timePassed += timeToPass
+    passTime(simTime)
 
     if printInfo:
         print("\nSimulated", simTime, "time...")
@@ -339,7 +326,8 @@ if __name__ == "__main__":
     #Use a seed to get reproducable results
     #seed(1)
 
-    SIMULATION_TIME = 1000000.0 # The amount of time to simulate
+    SIMULATION_TIME = 10000.0 # The amount of time to simulate
+    INIT_PHASE_TIME = 100 # The time to run the simulation before starting to calculate output
 
     #the randomGenerators instances that will be used (stored for printing after running for verification purposes)
     randomGenerators = {
@@ -351,6 +339,6 @@ if __name__ == "__main__":
             'ws3': RandomExponentialGenerator('dataFiles/ws3.dat')
         }
 
-    simulate(randomGenerators, simTime=SIMULATION_TIME, printInfo=True)
+    simulate(randomGenerators, SIMULATION_TIME, INIT_PHASE_TIME, True)
 
         

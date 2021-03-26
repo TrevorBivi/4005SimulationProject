@@ -1,3 +1,7 @@
+SIMULATION_TIME = 1000
+TEST_POINTS = 100
+MAX_MULTIPLIER = 10
+
 import sys
 sys.path.append("..")
 
@@ -7,17 +11,13 @@ from random import seed
 
 import matplotlib
 import matplotlib.pyplot
-
 import matplotlib.pyplot as plt
-
 
 import os
 if not os.path.exists('output'):
     os.makedirs('output')
 
 seed(1)
-
-SIMULATION_TIME = 10000
 
 defaultLambdas = {
     'servinsp1':RandomExponentialGenerator.lambdaFromFile('../dataFiles/servinsp1.dat'),
@@ -26,7 +26,6 @@ defaultLambdas = {
     'ws1':RandomExponentialGenerator.lambdaFromFile('../dataFiles/ws1.dat'),
     'ws2':RandomExponentialGenerator.lambdaFromFile('../dataFiles/ws2.dat'),
     'ws3':RandomExponentialGenerator.lambdaFromFile('../dataFiles/ws3.dat'),
-    
     }
 
 for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all'):
@@ -40,14 +39,10 @@ for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all
     i1Wait = []
     i2Wait = []
 
-    iVals = None
-    if multiplyKey in ('ws2', 'ws3','servinsp22','servinsp23'):
-        iVals = [ i / 133 for i in range(1,200,4) ]
-    else:
-        iVals = [ i / 10 for i in range(1,100,2) ]
+    iVals = [ MAX_MULTIPLIER * i / TEST_POINTS for i in range(1,TEST_POINTS) ]
     
     for i in iVals:
-        print('multiply', multiplyKey, 'by', i)
+        print('multiply', multiplyKey, 'by', i, '/', iVals[-1])
         randomGenerators={
         }
         for key in defaultLambdas.keys():
@@ -72,7 +67,7 @@ for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all
         p1l, = plt.plot( iVals[i], p1Complete[i], 'r,')
         p2l, = plt.plot( iVals[i], p2Complete[i], 'g,')
         p3l, = plt.plot( iVals[i], p3Complete[i], 'b,')
-        plt.title( "products completed / scaling " + multiplyKey + " λ / " + str(SIMULATION_TIME) + ' time' )
+        plt.title( "products completed / scaling " + multiplyKey + " λ / " + str(SIMULATION_TIME) + ' time units' )
         plt.xlabel( "lambda multiplier")
         plt.ylabel( "products completed")
     plt.legend([p1l,p2l,p3l], ["Product 1", "Product 2", "Product 3"])
@@ -86,7 +81,7 @@ for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all
         i1l, = plt.plot( iVals[i], i1Wait[i], 'k,')
         i2l, = plt.plot( iVals[i], i2Wait[i], 'm,')
 
-        plt.title( "time waiting / scaling " + multiplyKey + " λ / " + str(SIMULATION_TIME) + ' time' )
+        plt.title( "time waiting / scaling " + multiplyKey + " λ / " + str(SIMULATION_TIME) + ' time units' )
         plt.xlabel( "lambda multiplier")
         plt.ylabel( "time waiting")
     plt.legend([w1l,w2l,w3l,i1l,i2l], ["Workstation 1", "Workstation 2", "Workstation 3", "Inspector 1", "Inspector 2"])
