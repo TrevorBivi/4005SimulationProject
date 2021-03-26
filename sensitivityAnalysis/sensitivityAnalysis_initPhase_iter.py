@@ -32,6 +32,15 @@ w3Wait = []
 i1Wait = []
 i2Wait = []
 
+randomGenerators = {
+    'servinsp1': RandomExponentialGenerator('../dataFiles/servinsp1.dat',ITERATIONS_PER_UNIT_TIME),
+    'servinsp22': RandomExponentialGenerator('../dataFiles/servinsp22.dat',ITERATIONS_PER_UNIT_TIME),
+    'servinsp23': RandomExponentialGenerator('../dataFiles/servinsp23.dat',ITERATIONS_PER_UNIT_TIME),
+    'ws1': RandomExponentialGenerator('../dataFiles/ws1.dat',ITERATIONS_PER_UNIT_TIME),
+    'ws2': RandomExponentialGenerator('../dataFiles/ws2.dat',ITERATIONS_PER_UNIT_TIME),
+    'ws3': RandomExponentialGenerator('../dataFiles/ws3.dat',ITERATIONS_PER_UNIT_TIME)
+}
+
 initTimes = [MAX_TO_TEST * i / TEST_POINTS for i in range(TEST_POINTS)]
 for initTime in initTimes:
 
@@ -47,14 +56,6 @@ for initTime in initTimes:
     
     print('initTime',initTime,'/',initTimes[-1])
     for i in range(SAMPLES_PER_POINT):
-        randomGenerators = {
-            'servinsp1': RandomExponentialGenerator('../dataFiles/servinsp1.dat',ITERATIONS_PER_UNIT_TIME),
-            'servinsp22': RandomExponentialGenerator('../dataFiles/servinsp22.dat',ITERATIONS_PER_UNIT_TIME),
-            'servinsp23': RandomExponentialGenerator('../dataFiles/servinsp23.dat',ITERATIONS_PER_UNIT_TIME),
-            'ws1': RandomExponentialGenerator('../dataFiles/ws1.dat',ITERATIONS_PER_UNIT_TIME),
-            'ws2': RandomExponentialGenerator('../dataFiles/ws2.dat',ITERATIONS_PER_UNIT_TIME),
-            'ws3': RandomExponentialGenerator('../dataFiles/ws3.dat',ITERATIONS_PER_UNIT_TIME)
-        }
         res = simulate(randomGenerators,SIMULATION_TIME,ITERATIONS_PER_UNIT_TIME,initTime)
         w1 += res['waitTimes']['workstation1']
         w2 += res['waitTimes']['workstation2']
