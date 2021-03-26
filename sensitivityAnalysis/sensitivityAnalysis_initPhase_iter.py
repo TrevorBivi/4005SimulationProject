@@ -1,7 +1,7 @@
 import sys
 sys.path.append("..")
 
-from main import *
+from simulator_iter import *
 import random
 from random import seed
 
@@ -18,9 +18,9 @@ if not os.path.exists('output'):
 seed(1)
 
 SIMULATION_TIME = 1
-ITERATIONS_PER_UNIT_TIME = 50
+ITERATIONS_PER_UNIT_TIME = 10
 
-samplesPer = 50000
+samplesPer = 1000
 
 p1Complete = []
 p2Complete = []
@@ -32,7 +32,7 @@ w3Wait = []
 i1Wait = []
 i2Wait = []
 
-initTimes = [i for i in range(0,125,5)]
+initTimes = [i for i in range(0,200,4)]
 for initTime in initTimes:
 
 
@@ -81,9 +81,9 @@ for i in range(len(initTimes)-1):
     p3l, = plt.plot( initTimes[i], p3Complete[i], 'b,')
     plt.title( "products completed / varying initilization time / " + str(SIMULATION_TIME) + ' time' )
     plt.xlabel( "initialization time")
-    plt.ylabel( "products completed (avg 50000 samples)")
+    plt.ylabel( "products completed (avg 100000 samples)")
 plt.legend([p1l,p2l,p3l], ["Product 1", "Product 2", "Product 3"])
-plt.savefig(fname="output/"+'initTime_completed.png')
+plt.savefig(fname="output/"+'initTime_completed_iter.png')
 plt.clf()
 
 for i in range(len(initTimes)-1):
@@ -94,7 +94,7 @@ for i in range(len(initTimes)-1):
     i2l, = plt.plot( initTimes[i], i2Wait[i], 'm,')
     plt.title( "time waiting / varying initilization time / " + str(SIMULATION_TIME) + ' time' )
     plt.xlabel( "initialization time")
-    plt.ylabel( "time waiting (avg 50000 samples)")
+    plt.ylabel( "time waiting (avg 100000 samples)")
 plt.legend([w1l,w2l,w3l,i1l,i2l], ["Workstation 1", "Workstation 2", "Workstation 3", "Inspector 1", "Inspector 2"])
-plt.savefig(fname="output/"+'initTime_waiting.png')
+plt.savefig(fname="output/"+'initTime_waiting_iter.png')
 plt.clf()

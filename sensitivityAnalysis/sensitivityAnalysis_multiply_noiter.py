@@ -1,7 +1,7 @@
 import sys
 sys.path.append("..")
 
-from main import *
+from simulator import *
 import random
 from random import seed
 
@@ -17,8 +17,7 @@ if not os.path.exists('output'):
 
 seed(1)
 
-SIMULATION_TIME = 100000
-ITERATIONS_PER_UNIT_TIME = 10
+SIMULATION_TIME = 10000
 
 defaultLambdas = {
     'servinsp1':RandomExponentialGenerator.lambdaFromFile('../dataFiles/servinsp1.dat'),
@@ -53,11 +52,11 @@ for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all
         }
         for key in defaultLambdas.keys():
             if multiplyKey == 'all' or key == multiplyKey:
-                randomGenerators[key] = RandomExponentialGenerator(defaultLambdas[key] * i, ITERATIONS_PER_UNIT_TIME)
+                randomGenerators[key] = RandomExponentialGenerator(defaultLambdas[key] * i)
             else:
-                randomGenerators[key] = RandomExponentialGenerator(defaultLambdas[key], ITERATIONS_PER_UNIT_TIME)
+                randomGenerators[key] = RandomExponentialGenerator(defaultLambdas[key])
 
-        results = simulate(randomGenerators, simTime=SIMULATION_TIME, iterPerTime=ITERATIONS_PER_UNIT_TIME , initPhaseTime=0, printInfo=False)
+        results = simulate(randomGenerators, simTime=SIMULATION_TIME, initPhaseTime=0, printInfo=False)
                 
         p1Complete.append( results['completed']['product1'] )
         p2Complete.append( results['completed']['product2'] )
@@ -77,19 +76,19 @@ for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all
         plt.xlabel( "lambda multiplier")
         plt.ylabel( "products completed")
     plt.legend([p1l,p2l,p3l], ["Product 1", "Product 2", "Product 3"])
-    plt.savefig(fname="output/"+multiplyKey+'_completed.png')
+    plt.savefig(fname="output/"+multiplyKey+'_completed_noiter.png')
     plt.clf()
 
     for i in range(len(iVals)-1):
-        w1l, = plt.plot( iVals[i], w1Wait[i] / ITERATIONS_PER_UNIT_TIME, 'r,')
-        w2l, = plt.plot( iVals[i], w2Wait[i] / ITERATIONS_PER_UNIT_TIME, 'g,')
-        w3l, = plt.plot( iVals[i], w3Wait[i] / ITERATIONS_PER_UNIT_TIME, 'b,')
-        i1l, = plt.plot( iVals[i], i1Wait[i] / ITERATIONS_PER_UNIT_TIME, 'k,')
-        i2l, = plt.plot( iVals[i], i2Wait[i] / ITERATIONS_PER_UNIT_TIME, 'm,')
+        w1l, = plt.plot( iVals[i], w1Wait[i], 'r,')
+        w2l, = plt.plot( iVals[i], w2Wait[i], 'g,')
+        w3l, = plt.plot( iVals[i], w3Wait[i], 'b,')
+        i1l, = plt.plot( iVals[i], i1Wait[i], 'k,')
+        i2l, = plt.plot( iVals[i], i2Wait[i], 'm,')
 
         plt.title( "time waiting / scaling " + multiplyKey + " λ / " + str(SIMULATION_TIME) + ' time' )
         plt.xlabel( "lambda multiplier")
         plt.ylabel( "time waiting")
     plt.legend([w1l,w2l,w3l,i1l,i2l], ["Workstation 1", "Workstation 2", "Workstation 3", "Inspector 1", "Inspector 2"])
-    plt.savefig(fname="output/"+multiplyKey+'_waiting.png')
+    plt.savefig(fname="output/"+multiplyKey+'_waiting_noiter.png')
     plt.clf()

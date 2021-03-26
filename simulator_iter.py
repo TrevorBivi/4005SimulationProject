@@ -312,8 +312,8 @@ if __name__ == "__main__":
     #Use a seed to get reproducable results
     #seed(1)
 
-    SIMULATION_TIME = 30000.0 # The amount of time to simulate
-    ITERATIONS_PER_UNIT_TIME = 25 #The iterations per unit of time
+    SIMULATION_TIME = 1000000.0 # The amount of time to simulate
+    ITERATIONS_PER_UNIT_TIME = 100 #The iterations per unit of time
 
     #the randomGenerators instances that will be used (stored for printing after running for verification purposes)
     randomGenerators = {
