@@ -81,11 +81,11 @@ for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all
     plt.clf()
 
     for i in range(len(iVals)-1):
-        w1l, = plt.plot( iVals[i], w1Wait[i] / ITERATIONS_PER_UNIT_TIME, 'r,')
-        w2l, = plt.plot( iVals[i], w2Wait[i] / ITERATIONS_PER_UNIT_TIME, 'g,')
-        w3l, = plt.plot( iVals[i], w3Wait[i] / ITERATIONS_PER_UNIT_TIME, 'b,')
-        i1l, = plt.plot( iVals[i], i1Wait[i] / ITERATIONS_PER_UNIT_TIME, 'k,')
-        i2l, = plt.plot( iVals[i], i2Wait[i] / ITERATIONS_PER_UNIT_TIME, 'm,')
+        w1l, = plt.plot( iVals[i], w1Wait[i], 'r,')
+        w2l, = plt.plot( iVals[i], w2Wait[i], 'g,')
+        w3l, = plt.plot( iVals[i], w3Wait[i], 'b,')
+        i1l, = plt.plot( iVals[i], i1Wait[i], 'k,')
+        i2l, = plt.plot( iVals[i], i2Wait[i], 'm,')
 
         plt.title( "time waiting / scaling " + multiplyKey + " λ / " + str(SIMULATION_TIME) + ' time' )
         plt.xlabel( "lambda multiplier")
