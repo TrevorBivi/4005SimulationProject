@@ -1,7 +1,15 @@
-SIMULATION_TIME = 1000
-ITERATIONS_PER_UNIT_TIME = 10
+SIMULATION_TIME = 10000
+ITERATIONS_PER_UNIT_TIME = 5
 TEST_POINTS = 100
-MAX_MULTIPLIER = 10
+MAX_MULTIPLIERS = {
+    'servinsp1':10.0,
+    'servinsp22':1.5,
+    'servinsp23':1.5,
+    'ws1':10.0,
+    'ws2':1.5,
+    'ws3':1.5,
+    'all':10.0
+    }
 
 import sys
 sys.path.append("..")
@@ -39,8 +47,8 @@ for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all
     w3Wait = []
     i1Wait = []
     i2Wait = []
-
-    iVals = [ MAX_MULTIPLIER * i / TEST_POINTS for i in range(1,TEST_POINTS) ]
+    
+    iVals = [ MAX_MULTIPLIERS[multiplyKey] * i / TEST_POINTS for i in range(1,TEST_POINTS) ]
     
     for i in iVals:
         print('multiply', multiplyKey, 'by', i, '/', iVals[-1])
@@ -63,11 +71,12 @@ for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all
         w3Wait.append( results['waitTimes']['workstation3'] )
         i1Wait.append( results['waitTimes']['inspector1'] )
         i2Wait.append( results['waitTimes']['inspector2'] )
-
+        
+    p3Offset = MAX_MULTIPLIERS[multiplyKey] * 0.5 / 200  #Offset p3 ~1px so it doesn't cover p2
     for i in range(len(iVals)):
         p1l, = plt.plot( iVals[i], p1Complete[i], 'r,')
         p2l, = plt.plot( iVals[i], p2Complete[i], 'g,')
-        p3l, = plt.plot( iVals[i], p3Complete[i], 'b,')
+        p3l, = plt.plot( iVals[i] + p3Offset, p3Complete[i], 'b,')
         plt.title( "products completed / scaling " + multiplyKey + " λ / " + str(SIMULATION_TIME) + ' time units' )
         plt.xlabel( "lambda multiplier")
         plt.ylabel( "products completed")

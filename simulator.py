@@ -264,7 +264,7 @@ def simulate(randomGenerators, simTime, initPhaseTime=0, printInfo=False):
         Inspector('inspector 2', (components['C2'],components['C3']), workstations ),
         ]
 
-    iterables =  workstations + inspectors
+    iterables =  inspectors + workstations
 
     def passTime(amountTime):
         timePassed = 0
