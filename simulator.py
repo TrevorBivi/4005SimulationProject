@@ -332,7 +332,7 @@ if __name__ == "__main__":
     SIMULATION_TIME = 100000.0 # The amount of time to simulate
     INIT_PHASE_TIME = 1000 # The time to run the simulation before starting to calculate output
 
-    #the randomGenerators instances that will be used (stored for printing after running for verification purposes)
+    #the randomGenerators instances that will be used for input
     randomGenerators = {
             'servinsp1': RandomExponentialGenerator('dataFiles/servinsp1.dat'),
             'servinsp22': RandomExponentialGenerator('dataFiles/servinsp22.dat'),
