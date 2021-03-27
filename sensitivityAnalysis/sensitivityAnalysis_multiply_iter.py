@@ -2,7 +2,7 @@ SIMULATION_TIME = 10000
 ITERATIONS_PER_UNIT_TIME = 5
 TEST_POINTS = 100
 MAX_MULTIPLIERS = {
-    'servinsp1':10.0,
+    'servinsp1':20.0,
     'servinsp22':1.5,
     'servinsp23':1.5,
     'ws1':10.0,
