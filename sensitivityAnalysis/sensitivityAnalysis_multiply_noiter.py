@@ -7,7 +7,7 @@ MAX_MULTIPLIERS = {
     'ws1':10.0,
     'ws2':1.5,
     'ws3':1.5,
-        'all':10.0
+    'all':10.0
     }
 
 import sys
@@ -71,11 +71,15 @@ for multiplyKey in ('servinsp1','servinsp22','servinsp23','ws1','ws2','ws3','all
         i1Wait.append( results['waitTimes']['inspector1'] )
         i2Wait.append( results['waitTimes']['inspector2'] )
         
-    p3Offset = MAX_MULTIPLIERS[multiplyKey] * 0.5 / 200  #Offset p3 ~1px so it doesn't cover p2
     for i in range(len(iVals)-1):
         p1l, = plt.plot( iVals[i], p1Complete[i], 'r,')
-        p2l, = plt.plot( iVals[i], p2Complete[i], 'g,')
-        p3l, = plt.plot( iVals[i] + p3Offset, p3Complete[i], 'b,')
+        
+        if i % 2 == 0: #change which of p2 p3 will overlap the other every other sample
+            p2l, = plt.plot( iVals[i], p2Complete[i], 'g,')
+            p3l, = plt.plot( iVals[i], p3Complete[i], 'b,')
+        else:
+            p3l, = plt.plot( iVals[i], p3Complete[i], 'b,')
+            p2l, = plt.plot( iVals[i], p2Complete[i], 'g,')
         
         plt.title( "products completed / scaling " + multiplyKey + " λ / " + str(SIMULATION_TIME) + ' time units' )
         plt.xlabel( "lambda multiplier")
