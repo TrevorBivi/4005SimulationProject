@@ -342,6 +342,6 @@ if __name__ == "__main__":
             'ws3': RandomExponentialGenerator('dataFiles/ws3.dat')
         }
 
-    simulate(randomGenerators, SIMULATION_TIME, 0, True)
+    simulate(randomGenerators, SIMULATION_TIME, INIT_PHASE_TIME, True)
 
         
