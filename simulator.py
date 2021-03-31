@@ -1,9 +1,12 @@
 import random
+import math
 from random import seed
 import numpy as np
 
 DEBUGPRINT = False
 MAX_BUFFER_SIZE = 2
+
+FLOAT_ERR = 0.00000000001
 
 def printHandler(*args):
     if DEBUGPRINT:
@@ -57,13 +60,13 @@ class RandomDataGenerator(object):
         """
         dataFile -- the file to get data values from
         """
-        data = open(file,'r').read() # the file data
+        data = open(dataFile,'r').read() # the file data
         lines = data.split('\n') #the lines of file data
         self.floats = [float(l) for l in lines[:-2]] #a list of all values in the data file
 
     def generate(self):
         """picks a random time directly from the given data file"""
-        index = random.randint(0,len(self.tempFloats)-1) #The randomly chosen data index to return
+        index = random.randint(0,len(self.floats)-1) #The randomly chosen data index to return
         return self.floats[index]
 
 class Component(object):
@@ -138,7 +141,7 @@ class Inspector(object):
             assert self.workTime == 0
             self.timeWaiting += amount
         else:
-            assert self.workTime - amount >= 0
+            assert self.workTime - amount >= -FLOAT_ERR
             self.workTime = max(self.workTime - amount, 0)
             if self.workTime == 0:
                 printHandler("I", self.name, "finishes a - ", self.currentComponent.name)
@@ -169,10 +172,12 @@ class Workstation(object):
         for component in components:
             self.buffers[component] = 0
 
-        self.completed = 0 #amount of products fully completed
         self.workTime = 0 # The time for busy work to finish
         self.timeWaiting = 0 #The amount of iterations spent waiting to have all the components needed to start working
         self.blocked = True #Whether the workstaion is currently waiting to start work
+
+        self.timeSinceLastCompletion = None #time since last component was completed
+        self.completionTimes = [] #stores completion times
             
     def generateRandomWorkTime(self):
         """set a new random work time"""
@@ -212,15 +217,20 @@ class Workstation(object):
         advances workstation in time
         amount -- amount of time (if workstation is busy this should never be larger than workTime)
         """
+        if self.timeSinceLastCompletion != None:
+            self.timeSinceLastCompletion += amount
+        
         if self.blocked:
             assert self.workTime == 0
             self.timeWaiting += amount
         else:
-            assert self.workTime - amount >= 0
+            assert self.workTime - amount >= - FLOAT_ERR
             self.workTime = max(self.workTime - amount, 0)
             if self.workTime == 0:
                 printHandler("W",self.name,"completes a product canTakeFromBuffers:",self.canTakeFromBuffers())
-                self.completed += 1
+                if self.timeSinceLastCompletion != None:
+                    self.completionTimes.append(self.timeSinceLastCompletion)
+                self.timeSinceLastCompletion = 0
 
         if self.workTime == 0:
             if self.canTakeFromBuffers():
@@ -279,37 +289,38 @@ def simulate(randomGenerators, simTime, initPhaseTime=0, printInfo=False):
                     timeToPass = amountTime - timePassed
             printHandler("\nT",timeToPass)
 
+            timePassed += timeToPass
+
             #Advance time until next interesting thing
-            for iterable in iterables:
+            for iterable in iterables:#make inspectors check for opening
                 iterable.advanceTime(timeToPass)
+                
             for inspector in inspectors:#make inspectors check for opening
                 inspector.advanceTime(0)
-            timePassed += timeToPass
+            
 
     if initPhaseTime:
         passTime(initPhaseTime)
         for iterable in iterables:
             iterable.timeWaiting = 0
         for workstation in workstations:
-            workstation.completed = 0
+            workstation.completionTimes = []
+            workstation.timeSinceLastCompletion = None
         printHandler("## BEGIN ACTUAL SIMULATION")
 
     passTime(simTime)
 
-    if printInfo:
-        print("\nSimulated", simTime, "time...")
 
-        for num, workstation in enumerate(workstations):
-            print("P" + str(num+1) + " created:", workstation.completed, '(' + str(workstation.completed / simTime) + " / time unit)")
+
+    def completionInfo(workstation):
+        amnt = len(workstation.completionTimes)
+        avg = sum(workstation.completionTimes) / amnt
+        var = math.sqrt(sum([ (y - avg) ** 2 for y in workstation.completionTimes ]) / (amnt - 1))
+        return {'amount':amnt, 'average':avg, 'variance':var}
+    
+    returnInfo =  {
+
             
-        for iterable in iterables:
-            print(iterable.name, "time waiting:", iterable.timeWaiting, ' time units)')
-
-        print("\nInput parameters after...")
-        for key in randomGenerators.keys():
-            print(key+':',randomGenerators[key].lmbda)
-
-    return {
             'waitTimes':{
                 'inspector1':inspectors[0].timeWaiting,
                 'inspector2':inspectors[1].timeWaiting,
@@ -317,19 +328,43 @@ def simulate(randomGenerators, simTime, initPhaseTime=0, printInfo=False):
                 'workstation2':workstations[1].timeWaiting,
                 'workstation3':workstations[2].timeWaiting,
                 },
+
+            #redundant info so sensitivity analysis stuff doesn't need to change
             'completed':{
-                'product1':workstations[0].completed,
-                'product2':workstations[1].completed,
-                'product3':workstations[2].completed,
+                'product1':len(workstations[0].completionTimes),
+                'product2':len(workstations[1].completionTimes),
+                'product3':len(workstations[2].completionTimes),
+                },
+
+            'completionInfo':{
+                'product1':completionInfo(workstations[0]),
+                'product2':completionInfo(workstations[1]),
+                'product3':completionInfo(workstations[2]),
                 }
+            
         }
+
+    if printInfo:
+        print("\nSimulated", simTime, "time...")
+
+        for p in ('product1','product2','product3'):
+            print("workstation 1 - amnt:",returnInfo['completionInfo'][p]['amount'],
+                  'avg:',returnInfo['completionInfo'][p]['average'],
+                  'var',returnInfo['completionInfo'][p]['variance'])
+                
+        for iterable in iterables:
+            print(iterable.name, "time waiting:", iterable.timeWaiting, ' time units)')
+
+        print("\nInput parameters after...")
+        for key in randomGenerators.keys():
+            print(key+':',randomGenerators[key].lmbda)
 
 if __name__ == "__main__":
 
     #Use a seed to get reproducable results
     #seed(1)
 
-    SIMULATION_TIME = 100000.0 # The amount of time to simulate
+    SIMULATION_TIME = 1000000.0 # The amount of time to simulate
     INIT_PHASE_TIME = 1000 # The time to run the simulation before starting to calculate output
 
     #the randomGenerators instances that will be used for input
