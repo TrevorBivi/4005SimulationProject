@@ -314,8 +314,15 @@ def simulate(randomGenerators, simTime, initPhaseTime=0, printInfo=False):
 
     def completionInfo(workstation):
         amnt = len(workstation.completionTimes)
-        avg = sum(workstation.completionTimes) / amnt
-        var = math.sqrt(sum([ (y - avg) ** 2 for y in workstation.completionTimes ]) / (amnt - 1))
+        if amnt != 0:
+            avg = sum(workstation.completionTimes) / amnt
+            if amnt != 1:
+                var = math.sqrt(sum([ (y - avg) ** 2 for y in workstation.completionTimes ]) / (amnt - 1))
+            else:
+                var = 0
+        else:
+            avg = 0
+            var = None
         return {'amount':amnt, 'average':avg, 'variance':var}
     
     returnInfo =  {
@@ -355,17 +362,21 @@ def simulate(randomGenerators, simTime, initPhaseTime=0, printInfo=False):
         for iterable in iterables:
             print(iterable.name, "time waiting:", iterable.timeWaiting, ' time units)')
 
+
+        
         print("\nInput parameters after...")
         for key in randomGenerators.keys():
             print(key+':',randomGenerators[key].lmbda)
+
+    return returnInfo
 
 if __name__ == "__main__":
 
     #Use a seed to get reproducable results
     #seed(1)
 
-    SIMULATION_TIME = 1000000.0 # The amount of time to simulate
-    INIT_PHASE_TIME = 1000 # The time to run the simulation before starting to calculate output
+    SIMULATION_TIME = 100000.0 # The amount of time to simulate
+    INIT_PHASE_TIME = 1500 # The time to run the simulation before starting to calculate output
 
     #the randomGenerators instances that will be used for input
     randomGenerators = {
@@ -376,7 +387,13 @@ if __name__ == "__main__":
             'ws2': RandomExponentialGenerator('dataFiles/ws2.dat'),
             'ws3': RandomExponentialGenerator('dataFiles/ws3.dat')
         }
-
-    simulate(randomGenerators, SIMULATION_TIME, INIT_PHASE_TIME, True)
-
+    for k in randomGenerators.keys():
+        print(k,randomGenerators[k].lmbda)
+    for i in range(25):
+        ret = simulate(randomGenerators, SIMULATION_TIME, INIT_PHASE_TIME, False)
+        print( ret['waitTimes']['inspector1']/100000, '\t',
+                ret['waitTimes']['inspector2']/100000, '\t',
+               ret['completed']['product1']/100000, '\t',
+               ret['completed']['product2']/100000, '\t',
+               ret['completed']['product3']/100000 )
         
